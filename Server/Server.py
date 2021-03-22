@@ -31,6 +31,10 @@ class BidirectionalService(bidirectional_pb2_grpc.BidirectionalServicer):
         max_score = 0
         line_holder_score = []
         start_time = time.time()
+
+        lines_counted = 1
+        amount_oc = 0
+        percentage_OC = 0.0
         for message in request_iterator:
             Current_Time = time.time()
             if(Current_Time - Initial_time >= 80):
@@ -39,8 +43,11 @@ class BidirectionalService(bidirectional_pb2_grpc.BidirectionalServicer):
             num_comments = Compute_MaxComments(line, num_comments)
             max_score = Compute_MaxScore(line, max_score)
             Cumilitave_score, amount_of_reads, start_time = AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads)
+            amount_oc, percentage_OC = percentage_Original(lines_counted,line,amount_oc)
+            lines_counted+=1
         print("Max_Score = " + str(max_score))
         print("Most Comments = "+ str(num_comments))
+        print("Percentage of original content = " + str(percentage_OC) + "%")
         return bidirectional_pb2.Response(response = True)
 
 
@@ -61,6 +68,19 @@ def read_line(line_info):
             l[1] += "," + l[2]
             l.pop(2)
     return l
+
+def percentage_Original(amount, line, amount_oc):
+    OC = "[OC]"
+    if OC in line[1]:
+        amount_oc+=1
+
+
+    if amount_oc > 0:
+        per = (amount_oc/amount)*100
+        return amount_oc,per
+    else:
+        return amount_oc,0
+
 
 
 
