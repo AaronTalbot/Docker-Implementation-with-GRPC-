@@ -14,28 +14,32 @@ def make_message(message):
 
 
 def generate_messages():
-    f = read_file()
+    print("BEFORE READ FILE")
+    f = open("Client/r_dataisbeautiful_posts.csv", "r")
     index = 0
+    print("DO I GET TO GENERATE MESSAGES")
     for line in f:
         if index != 0:
             msg = make_message(line)
             yield msg
         index = index + 1
-        time.sleep(random.randint(1,3))
+        time.sleep(random.randint(1,10))
 
 
 
 def send_message(stub):
     response = stub.GetServerResponse(generate_messages())
-    print("Hello from the server received your %s" % response.response)
+    print("There server has completed =  %s" % response.response)
 
 
 def run():
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel('server:50051') as channel:
+        print("DO I GET TO CLIENT RUN")
         stub = bidirectional_pb2_grpc.BidirectionalStub(channel)
         send_message(stub)
 
 def read_file():
+    print("DO I GET TO FILE GENERATE")
     return open("r_dataisbeautiful_posts.csv", "r")
 
 
