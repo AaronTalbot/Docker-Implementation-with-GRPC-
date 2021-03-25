@@ -23,41 +23,37 @@ import redis
 class BidirectionalService(bidirectional_pb2_grpc.BidirectionalServicer):
 
     def GetServerResponse(self, request_iterator, context):
-        print("DO I GET HERE")
         iterator = 0
         num_comments = 0
         Cumilitave_score = 0
         amount_of_reads = 0
         line_holder_comments = []
         Initial_time = time.time()
-        print(request_iterator)
         max_score = 0
         line_holder_score = []
         start_time = time.time()
         lines_counted = 1
         amount_oc = 0
         percentage_OC = 0.0
+        Average = 0
         for Messages in request_iterator:
-            print(Messages.message)
             if iterator % 10 == 0:
                 try:
                     conn = redis.StrictRedis(host='redis',port=6379)
-                    conn.set("log.greeter_server.percentage_OC", str(percentage_OC))
-                    conn.set("log.greeter_server.num_comments", str(num_comments))
+                    conn.set("log.greeter_server.OC", str(percentage_OC))
+
+                    conn.set("log.greeter_server.num_comments",str(num_comments))
                     conn.set("log.greeter_server.max_score", str(max_score))
-                    conn.set("log.greeter_server.Cumilitave_score", str(Cumilitave_score))
+                    conn.set("log.greeter_server.Cumilative", str(Average))
                 except Exception as ex:
                     print("Redis Error: ",ex)
             line = read_line(Messages.message)
             num_comments = Compute_MaxComments(line, num_comments)
             max_score = Compute_MaxScore(line, max_score)
-            Cumilitave_score, amount_of_reads, start_time = AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads)
+            Average, Cumilitave_score, amount_of_reads, start_time = AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads, Average)
             amount_oc, percentage_OC = percentage_Original(lines_counted,line,amount_oc)
             lines_counted+=1
             iterator+=1
-        print("Max_Score = " + str(max_score))
-        print("Most Comments = "+ str(num_comments))
-        print("Percentage of original content = " + str(percentage_OC) + "%")
         return bidirectional_pb2.Response(response = True)
 
 
@@ -108,15 +104,15 @@ def Compute_MaxScore(line, max_score):
     if int(line[2]) > max_score:
         line_holder_score = line
         max_score = int(line[2])
-        print("Max Score", max_score)
+        # print("Max Score", max_score)
     return max_score
     
 
 
-def AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads):
+def AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads, Average):
     Current_Time = time.time()
     Arr = []
-    if Current_Time - start_time >= 30:
+    if Current_Time - start_time >= 180:
         Average = Cumilitave_score / amount_of_reads
         start_time = time.time()
         Cumilitave_score = 0
@@ -125,7 +121,7 @@ def AverageScoreOverTime(line, start_time, Cumilitave_score, amount_of_reads):
     else:
         Cumilitave_score = Cumilitave_score + int(line[2])
         amount_of_reads += 1
-    return  Cumilitave_score, amount_of_reads, start_time
+    return  Average, Cumilitave_score, amount_of_reads, start_time
         
 
 
